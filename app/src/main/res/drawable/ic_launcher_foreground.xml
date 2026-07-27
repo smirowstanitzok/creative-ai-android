@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Großer Kreativ-Funke, zentriert im Safe-Zone-Bereich -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M54,22 C54,44 64,54 86,54 C64,54 54,64 54,86 C54,64 44,54 22,54 C44,54 54,44 54,22 Z" />
+    <!-- kleiner Funke oben rechts -->
+    <path
+        android:fillColor="#FFEBE2FF"
+        android:pathData="M78,26 C78,32 81,35 87,35 C81,35 78,38 78,44 C78,38 75,35 69,35 C75,35 78,32 78,26 Z" />
+    <!-- kleiner Funke unten links -->
+    <path
+        android:fillColor="#FFEBE2FF"
+        android:pathData="M30,72 C30,76.8 33.2,80 38,80 C33.2,80 30,83.2 30,88 C30,83.2 26.8,80 22,80 C26.8,80 30,76.8 30,72 Z" />
+</vector>

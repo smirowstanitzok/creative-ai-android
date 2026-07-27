@@ -1,0 +1,367 @@
+[
+  {
+    "key": "1",
+    "name": "Bildgenerierung (Stable Diffusion WebUI Forge)",
+    "provides": "Forge-UI + vorinstalliertes Modell, dazu SDXL-Turbo",
+    "hint": "Das Image bringt realisticVision schon mit - du kannst sofort arbeiten. SDXL-Turbo erscheint nach dem Download im Dropdown (Reload-Symbol oben links).",
+    "image": "runpod/forge:3.3.0",
+    "primaryPort": 3000,
+    "extraPorts": [
+      8888
+    ],
+    "httpPorts": [
+      3000,
+      8888
+    ],
+    "diskGb": 60,
+    "gpuTypeIds": [
+      "NVIDIA GeForce RTX 4090",
+      "NVIDIA RTX 6000 Ada Generation",
+      "NVIDIA L40S",
+      "NVIDIA RTX A6000",
+      "NVIDIA GeForce RTX 3090",
+      "NVIDIA RTX A5000"
+    ],
+    "cudaVersions": [
+      "12.8",
+      "12.7",
+      "12.6",
+      "12.5",
+      "12.4",
+      "12.3",
+      "12.2",
+      "12.1"
+    ],
+    "jupyterEnv": "JUPYTER_LAB_PASSWORD",
+    "needsJupyterCred": true,
+    "needsFilebrowserCred": false,
+    "dockerOverride": {
+      "dockerStartCmd": [
+        "/bin/sh",
+        "-c",
+        "set -u\nmkdir -p $(dirname /workspace/bootstrap.log)\n\nsay() { echo \"[bootstrap $(date -u +%H:%M:%S)] $*\" >&2; }\n\nwait_dir() {\n    deadline=$(( $(date +%s) + ${2:-1200} ))\n    while [ ! -d \"$1\" ]; do\n        if [ \"$(date +%s)\" -ge \"$deadline\" ]; then\n            say \"Timeout: $1 wurde nicht angelegt\"\n            return 1\n        fi\n        sleep 5\n    done\n    say \"gefunden: $1\"\n}\n\nfind_dir() {\n    deadline=$(( $(date +%s) + ${2:-1200} ))\n    while :; do\n        hit=$(find /workspace -maxdepth 6 -type d -name \"$1\" 2>/dev/null | head -1)\n        if [ -n \"$hit\" ]; then\n            say \"gefunden: $hit\"\n            echo \"$hit\"\n            return 0\n        fi\n        if [ \"$(date +%s)\" -ge \"$deadline\" ]; then\n            say \"Timeout: Verzeichnis '$1' nicht gefunden\"\n            return 1\n        fi\n        sleep 5\n    done\n}\n\nfetch() {\n    if [ -s \"$2\" ]; then say \"vorhanden: $2\"; return 0; fi\n    mkdir -p \"$(dirname \"$2\")\"\n    say \"lade $(basename \"$2\") ...\"\n    if curl -fL --retry 5 --retry-delay 5 --retry-connrefused -o \"$2.part\" \"$1\"; then\n        mv \"$2.part\" \"$2\"\n        say \"fertig: $2\"\n    else\n        rm -f \"$2.part\"\n        say \"FEHLER beim Laden von $1\"\n        return 1\n    fi\n}\n\n{\n\nsay \"Warte auf die Forge-Installation ...\"\ndir=$(find_dir Stable-diffusion) || exit 1\nfetch \"https://huggingface.co/stabilityai/sdxl-turbo/resolve/main/sd_xl_turbo_1.0_fp16.safetensors\" \"$dir/sd_xl_turbo_1.0_fp16.safetensors\" || exit 1\nsay \"SDXL-Turbo liegt bereit - im Forge-UI oben links auf das Reload-Symbol.\"\n\n} >>/workspace/bootstrap.log 2>&1 &\nexec /start.sh\n"
+      ]
+    }
+  },
+  {
+    "key": "2",
+    "name": "Cinematic Video AI & Workflows (ComfyUI + LTX-Video)",
+    "provides": "ComfyUI + LTX-Video 2B + T5-Encoder",
+    "hint": "",
+    "image": "runpod/comfyui:1.4.4-cuda12.8",
+    "primaryPort": 8188,
+    "extraPorts": [
+      8888,
+      8080
+    ],
+    "httpPorts": [
+      8188,
+      8888,
+      8080
+    ],
+    "diskGb": 100,
+    "gpuTypeIds": [
+      "NVIDIA GeForce RTX 4090",
+      "NVIDIA RTX 6000 Ada Generation",
+      "NVIDIA L40S",
+      "NVIDIA RTX A6000",
+      "NVIDIA GeForce RTX 3090",
+      "NVIDIA RTX A5000"
+    ],
+    "cudaVersions": [
+      "12.8",
+      "12.7",
+      "12.6",
+      "12.5",
+      "12.4",
+      "12.3",
+      "12.2",
+      "12.1"
+    ],
+    "jupyterEnv": "JUPYTER_PASSWORD",
+    "needsJupyterCred": true,
+    "needsFilebrowserCred": true,
+    "dockerOverride": {
+      "dockerEntrypoint": [
+        "/bin/sh",
+        "-c",
+        "set -u\nmkdir -p $(dirname /workspace/bootstrap.log)\n\nsay() { echo \"[bootstrap $(date -u +%H:%M:%S)] $*\" >&2; }\n\nwait_dir() {\n    deadline=$(( $(date +%s) + ${2:-1200} ))\n    while [ ! -d \"$1\" ]; do\n        if [ \"$(date +%s)\" -ge \"$deadline\" ]; then\n            say \"Timeout: $1 wurde nicht angelegt\"\n            return 1\n        fi\n        sleep 5\n    done\n    say \"gefunden: $1\"\n}\n\nfind_dir() {\n    deadline=$(( $(date +%s) + ${2:-1200} ))\n    while :; do\n        hit=$(find /workspace -maxdepth 6 -type d -name \"$1\" 2>/dev/null | head -1)\n        if [ -n \"$hit\" ]; then\n            say \"gefunden: $hit\"\n            echo \"$hit\"\n            return 0\n        fi\n        if [ \"$(date +%s)\" -ge \"$deadline\" ]; then\n            say \"Timeout: Verzeichnis '$1' nicht gefunden\"\n            return 1\n        fi\n        sleep 5\n    done\n}\n\nfetch() {\n    if [ -s \"$2\" ]; then say \"vorhanden: $2\"; return 0; fi\n    mkdir -p \"$(dirname \"$2\")\"\n    say \"lade $(basename \"$2\") ...\"\n    if curl -fL --retry 5 --retry-delay 5 --retry-connrefused -o \"$2.part\" \"$1\"; then\n        mv \"$2.part\" \"$2\"\n        say \"fertig: $2\"\n    else\n        rm -f \"$2.part\"\n        say \"FEHLER beim Laden von $1\"\n        return 1\n    fi\n}\n\n{\n\nwait_dir \"/workspace/runpod-slim/ComfyUI/models\" || exit 1\nfetch \"https://huggingface.co/Lightricks/LTX-Video/resolve/main/ltxv-2b-0.9.6-distilled-04-25.safetensors\" \"/workspace/runpod-slim/ComfyUI/models/checkpoints/ltxv-2b-0.9.6-distilled.safetensors\" || exit 1\nfetch \"https://huggingface.co/Comfy-Org/mochi_preview_repackaged/resolve/main/split_files/text_encoders/t5xxl_fp8_e4m3fn_scaled.safetensors\" \"/workspace/runpod-slim/ComfyUI/models/text_encoders/t5xxl_fp8_e4m3fn_scaled.safetensors\" || exit 1\nsay \"LTX-Video bereit - in ComfyUI 'Workflow > Browse Templates > Video' laden.\"\n\n} >>/workspace/bootstrap.log 2>&1 &\nexec /start.sh\n"
+      ],
+      "dockerStartCmd": []
+    }
+  },
+  {
+    "key": "3",
+    "name": "Social-Media Video & Schnitt (ComfyUI + LTX-Video)",
+    "provides": "ComfyUI + LTX-Video 2B + T5-Encoder",
+    "hint": "Weitere Nodes über den ComfyUI-Manager nachinstallieren.",
+    "image": "runpod/comfyui:1.4.4-cuda12.8",
+    "primaryPort": 8188,
+    "extraPorts": [
+      8888,
+      8080
+    ],
+    "httpPorts": [
+      8188,
+      8888,
+      8080
+    ],
+    "diskGb": 70,
+    "gpuTypeIds": [
+      "NVIDIA GeForce RTX 4090",
+      "NVIDIA RTX 6000 Ada Generation",
+      "NVIDIA L40S",
+      "NVIDIA RTX A6000",
+      "NVIDIA GeForce RTX 3090",
+      "NVIDIA RTX A5000"
+    ],
+    "cudaVersions": [
+      "12.8",
+      "12.7",
+      "12.6",
+      "12.5",
+      "12.4",
+      "12.3",
+      "12.2",
+      "12.1"
+    ],
+    "jupyterEnv": "JUPYTER_PASSWORD",
+    "needsJupyterCred": true,
+    "needsFilebrowserCred": true,
+    "dockerOverride": {
+      "dockerEntrypoint": [
+        "/bin/sh",
+        "-c",
+        "set -u\nmkdir -p $(dirname /workspace/bootstrap.log)\n\nsay() { echo \"[bootstrap $(date -u +%H:%M:%S)] $*\" >&2; }\n\nwait_dir() {\n    deadline=$(( $(date +%s) + ${2:-1200} ))\n    while [ ! -d \"$1\" ]; do\n        if [ \"$(date +%s)\" -ge \"$deadline\" ]; then\n            say \"Timeout: $1 wurde nicht angelegt\"\n            return 1\n        fi\n        sleep 5\n    done\n    say \"gefunden: $1\"\n}\n\nfind_dir() {\n    deadline=$(( $(date +%s) + ${2:-1200} ))\n    while :; do\n        hit=$(find /workspace -maxdepth 6 -type d -name \"$1\" 2>/dev/null | head -1)\n        if [ -n \"$hit\" ]; then\n            say \"gefunden: $hit\"\n            echo \"$hit\"\n            return 0\n        fi\n        if [ \"$(date +%s)\" -ge \"$deadline\" ]; then\n            say \"Timeout: Verzeichnis '$1' nicht gefunden\"\n            return 1\n        fi\n        sleep 5\n    done\n}\n\nfetch() {\n    if [ -s \"$2\" ]; then say \"vorhanden: $2\"; return 0; fi\n    mkdir -p \"$(dirname \"$2\")\"\n    say \"lade $(basename \"$2\") ...\"\n    if curl -fL --retry 5 --retry-delay 5 --retry-connrefused -o \"$2.part\" \"$1\"; then\n        mv \"$2.part\" \"$2\"\n        say \"fertig: $2\"\n    else\n        rm -f \"$2.part\"\n        say \"FEHLER beim Laden von $1\"\n        return 1\n    fi\n}\n\n{\n\nwait_dir \"/workspace/runpod-slim/ComfyUI/models\" || exit 1\nfetch \"https://huggingface.co/Lightricks/LTX-Video/resolve/main/ltxv-2b-0.9.6-distilled-04-25.safetensors\" \"/workspace/runpod-slim/ComfyUI/models/checkpoints/ltxv-2b-0.9.6-distilled.safetensors\" || exit 1\nfetch \"https://huggingface.co/Comfy-Org/mochi_preview_repackaged/resolve/main/split_files/text_encoders/t5xxl_fp8_e4m3fn_scaled.safetensors\" \"/workspace/runpod-slim/ComfyUI/models/text_encoders/t5xxl_fp8_e4m3fn_scaled.safetensors\" || exit 1\nsay \"LTX-Video bereit - in ComfyUI 'Workflow > Browse Templates > Video' laden.\"\n\n} >>/workspace/bootstrap.log 2>&1 &\nexec /start.sh\n"
+      ],
+      "dockerStartCmd": []
+    }
+  },
+  {
+    "key": "4",
+    "name": "Radio-Jingles & Musikproduktion (ComfyUI + ACE-Step)",
+    "provides": "ComfyUI + ACE-Step 3.5B (Musik/Gesang aus Text)",
+    "hint": "",
+    "image": "runpod/comfyui:1.4.4-cuda12.8",
+    "primaryPort": 8188,
+    "extraPorts": [
+      8888,
+      8080
+    ],
+    "httpPorts": [
+      8188,
+      8888,
+      8080
+    ],
+    "diskGb": 70,
+    "gpuTypeIds": [
+      "NVIDIA GeForce RTX 4090",
+      "NVIDIA RTX 6000 Ada Generation",
+      "NVIDIA L40S",
+      "NVIDIA RTX A6000",
+      "NVIDIA GeForce RTX 3090",
+      "NVIDIA RTX A5000"
+    ],
+    "cudaVersions": [
+      "12.8",
+      "12.7",
+      "12.6",
+      "12.5",
+      "12.4",
+      "12.3",
+      "12.2",
+      "12.1"
+    ],
+    "jupyterEnv": "JUPYTER_PASSWORD",
+    "needsJupyterCred": true,
+    "needsFilebrowserCred": true,
+    "dockerOverride": {
+      "dockerEntrypoint": [
+        "/bin/sh",
+        "-c",
+        "set -u\nmkdir -p $(dirname /workspace/bootstrap.log)\n\nsay() { echo \"[bootstrap $(date -u +%H:%M:%S)] $*\" >&2; }\n\nwait_dir() {\n    deadline=$(( $(date +%s) + ${2:-1200} ))\n    while [ ! -d \"$1\" ]; do\n        if [ \"$(date +%s)\" -ge \"$deadline\" ]; then\n            say \"Timeout: $1 wurde nicht angelegt\"\n            return 1\n        fi\n        sleep 5\n    done\n    say \"gefunden: $1\"\n}\n\nfind_dir() {\n    deadline=$(( $(date +%s) + ${2:-1200} ))\n    while :; do\n        hit=$(find /workspace -maxdepth 6 -type d -name \"$1\" 2>/dev/null | head -1)\n        if [ -n \"$hit\" ]; then\n            say \"gefunden: $hit\"\n            echo \"$hit\"\n            return 0\n        fi\n        if [ \"$(date +%s)\" -ge \"$deadline\" ]; then\n            say \"Timeout: Verzeichnis '$1' nicht gefunden\"\n            return 1\n        fi\n        sleep 5\n    done\n}\n\nfetch() {\n    if [ -s \"$2\" ]; then say \"vorhanden: $2\"; return 0; fi\n    mkdir -p \"$(dirname \"$2\")\"\n    say \"lade $(basename \"$2\") ...\"\n    if curl -fL --retry 5 --retry-delay 5 --retry-connrefused -o \"$2.part\" \"$1\"; then\n        mv \"$2.part\" \"$2\"\n        say \"fertig: $2\"\n    else\n        rm -f \"$2.part\"\n        say \"FEHLER beim Laden von $1\"\n        return 1\n    fi\n}\n\n{\n\nwait_dir \"/workspace/runpod-slim/ComfyUI/models\" || exit 1\nfetch \"https://huggingface.co/Comfy-Org/ACE-Step_ComfyUI_repackaged/resolve/main/all_in_one/ace_step_v1_3.5b.safetensors\" \"/workspace/runpod-slim/ComfyUI/models/checkpoints/ace_step_v1_3.5b.safetensors\" || exit 1\nsay \"ACE-Step bereit - in ComfyUI 'Workflow > Browse Templates > Audio' laden.\"\n\n} >>/workspace/bootstrap.log 2>&1 &\nexec /start.sh\n"
+      ],
+      "dockerStartCmd": []
+    }
+  },
+  {
+    "key": "5",
+    "name": "Sprachsynthese & Voice-Cloning (F5-TTS)",
+    "provides": "F5-TTS mit Gradio-UI (Modelle laden beim ersten Lauf)",
+    "hint": "",
+    "image": "runpod/pytorch:1.1.0-cu1290-torch291-ubuntu2404",
+    "primaryPort": 7860,
+    "extraPorts": [
+      8888
+    ],
+    "httpPorts": [
+      7860,
+      8888
+    ],
+    "diskGb": 50,
+    "gpuTypeIds": [
+      "NVIDIA GeForce RTX 5090",
+      "NVIDIA GeForce RTX 4090",
+      "NVIDIA RTX PRO 6000 Blackwell Workstation Edition",
+      "NVIDIA L40S",
+      "NVIDIA GeForce RTX 3090",
+      "NVIDIA RTX A5000"
+    ],
+    "cudaVersions": [],
+    "jupyterEnv": "JUPYTER_PASSWORD",
+    "needsJupyterCred": true,
+    "needsFilebrowserCred": false,
+    "dockerOverride": {
+      "dockerStartCmd": [
+        "/bin/sh",
+        "-c",
+        "set -u\nmkdir -p $(dirname /workspace/bootstrap.log)\n\nsay() { echo \"[bootstrap $(date -u +%H:%M:%S)] $*\" >&2; }\n\nwait_dir() {\n    deadline=$(( $(date +%s) + ${2:-1200} ))\n    while [ ! -d \"$1\" ]; do\n        if [ \"$(date +%s)\" -ge \"$deadline\" ]; then\n            say \"Timeout: $1 wurde nicht angelegt\"\n            return 1\n        fi\n        sleep 5\n    done\n    say \"gefunden: $1\"\n}\n\nfind_dir() {\n    deadline=$(( $(date +%s) + ${2:-1200} ))\n    while :; do\n        hit=$(find /workspace -maxdepth 6 -type d -name \"$1\" 2>/dev/null | head -1)\n        if [ -n \"$hit\" ]; then\n            say \"gefunden: $hit\"\n            echo \"$hit\"\n            return 0\n        fi\n        if [ \"$(date +%s)\" -ge \"$deadline\" ]; then\n            say \"Timeout: Verzeichnis '$1' nicht gefunden\"\n            return 1\n        fi\n        sleep 5\n    done\n}\n\nfetch() {\n    if [ -s \"$2\" ]; then say \"vorhanden: $2\"; return 0; fi\n    mkdir -p \"$(dirname \"$2\")\"\n    say \"lade $(basename \"$2\") ...\"\n    if curl -fL --retry 5 --retry-delay 5 --retry-connrefused -o \"$2.part\" \"$1\"; then\n        mv \"$2.part\" \"$2\"\n        say \"fertig: $2\"\n    else\n        rm -f \"$2.part\"\n        say \"FEHLER beim Laden von $1\"\n        return 1\n    fi\n}\n\n{\n\nsay \"installiere F5-TTS (dauert einige Minuten) ...\"\npip install --no-cache-dir f5-tts || exit 1\nsay \"starte Gradio-UI auf Port 7860 ...\"\nexec f5-tts_infer-gradio --host 0.0.0.0 --port 7860\n\n} >>/workspace/bootstrap.log 2>&1 &\nexec /start.sh\n"
+      ]
+    }
+  },
+  {
+    "key": "6",
+    "name": "Automatisierte Präsentations-Erstellung (Ollama + Llama 3.2)",
+    "provides": "Ollama-API mit llama3.2:3b",
+    "hint": "Kein UI - die HTTP-API (/api/chat) aus dem eigenen Agenten nutzen.",
+    "image": "ollama/ollama:0.32.4",
+    "primaryPort": 11434,
+    "extraPorts": [],
+    "httpPorts": [
+      11434
+    ],
+    "diskGb": 50,
+    "gpuTypeIds": [
+      "NVIDIA GeForce RTX 5090",
+      "NVIDIA GeForce RTX 4090",
+      "NVIDIA RTX PRO 6000 Blackwell Workstation Edition",
+      "NVIDIA L40S",
+      "NVIDIA GeForce RTX 3090",
+      "NVIDIA RTX A5000"
+    ],
+    "cudaVersions": [],
+    "jupyterEnv": "JUPYTER_PASSWORD",
+    "needsJupyterCred": false,
+    "needsFilebrowserCred": false,
+    "dockerOverride": {
+      "dockerEntrypoint": [
+        "/bin/sh",
+        "-c",
+        "set -u\nmkdir -p $(dirname /workspace/bootstrap.log)\n\nsay() { echo \"[bootstrap $(date -u +%H:%M:%S)] $*\" >&2; }\n\nwait_dir() {\n    deadline=$(( $(date +%s) + ${2:-1200} ))\n    while [ ! -d \"$1\" ]; do\n        if [ \"$(date +%s)\" -ge \"$deadline\" ]; then\n            say \"Timeout: $1 wurde nicht angelegt\"\n            return 1\n        fi\n        sleep 5\n    done\n    say \"gefunden: $1\"\n}\n\nfind_dir() {\n    deadline=$(( $(date +%s) + ${2:-1200} ))\n    while :; do\n        hit=$(find /workspace -maxdepth 6 -type d -name \"$1\" 2>/dev/null | head -1)\n        if [ -n \"$hit\" ]; then\n            say \"gefunden: $hit\"\n            echo \"$hit\"\n            return 0\n        fi\n        if [ \"$(date +%s)\" -ge \"$deadline\" ]; then\n            say \"Timeout: Verzeichnis '$1' nicht gefunden\"\n            return 1\n        fi\n        sleep 5\n    done\n}\n\nfetch() {\n    if [ -s \"$2\" ]; then say \"vorhanden: $2\"; return 0; fi\n    mkdir -p \"$(dirname \"$2\")\"\n    say \"lade $(basename \"$2\") ...\"\n    if curl -fL --retry 5 --retry-delay 5 --retry-connrefused -o \"$2.part\" \"$1\"; then\n        mv \"$2.part\" \"$2\"\n        say \"fertig: $2\"\n    else\n        rm -f \"$2.part\"\n        say \"FEHLER beim Laden von $1\"\n        return 1\n    fi\n}\n\n{\n\nsay \"warte auf den Ollama-Server ...\"\ni=0\nwhile [ $i -lt 90 ]; do\n    /bin/ollama list >/dev/null 2>&1 && break\n    i=$((i + 1))\n    sleep 2\ndone\nsay \"lade Modell llama3.2:3b ...\"\n/bin/ollama pull llama3.2:3b || exit 1\nsay \"Modell llama3.2:3b ist einsatzbereit.\"\n\n} >>/workspace/bootstrap.log 2>&1 &\nexec /bin/ollama serve\n"
+      ],
+      "dockerStartCmd": []
+    }
+  },
+  {
+    "key": "7",
+    "name": "Interaktiver Text-Chat (Ollama + Qwen3 8B)",
+    "provides": "Ollama-API mit qwen3:8b",
+    "hint": "Chat z. B. per: curl <URL>/api/chat -d '{\"model\":\"qwen3:8b\",...}'",
+    "image": "ollama/ollama:0.32.4",
+    "primaryPort": 11434,
+    "extraPorts": [],
+    "httpPorts": [
+      11434
+    ],
+    "diskGb": 70,
+    "gpuTypeIds": [
+      "NVIDIA GeForce RTX 5090",
+      "NVIDIA GeForce RTX 4090",
+      "NVIDIA RTX PRO 6000 Blackwell Workstation Edition",
+      "NVIDIA L40S",
+      "NVIDIA GeForce RTX 3090",
+      "NVIDIA RTX A5000"
+    ],
+    "cudaVersions": [],
+    "jupyterEnv": "JUPYTER_PASSWORD",
+    "needsJupyterCred": false,
+    "needsFilebrowserCred": false,
+    "dockerOverride": {
+      "dockerEntrypoint": [
+        "/bin/sh",
+        "-c",
+        "set -u\nmkdir -p $(dirname /workspace/bootstrap.log)\n\nsay() { echo \"[bootstrap $(date -u +%H:%M:%S)] $*\" >&2; }\n\nwait_dir() {\n    deadline=$(( $(date +%s) + ${2:-1200} ))\n    while [ ! -d \"$1\" ]; do\n        if [ \"$(date +%s)\" -ge \"$deadline\" ]; then\n            say \"Timeout: $1 wurde nicht angelegt\"\n            return 1\n        fi\n        sleep 5\n    done\n    say \"gefunden: $1\"\n}\n\nfind_dir() {\n    deadline=$(( $(date +%s) + ${2:-1200} ))\n    while :; do\n        hit=$(find /workspace -maxdepth 6 -type d -name \"$1\" 2>/dev/null | head -1)\n        if [ -n \"$hit\" ]; then\n            say \"gefunden: $hit\"\n            echo \"$hit\"\n            return 0\n        fi\n        if [ \"$(date +%s)\" -ge \"$deadline\" ]; then\n            say \"Timeout: Verzeichnis '$1' nicht gefunden\"\n            return 1\n        fi\n        sleep 5\n    done\n}\n\nfetch() {\n    if [ -s \"$2\" ]; then say \"vorhanden: $2\"; return 0; fi\n    mkdir -p \"$(dirname \"$2\")\"\n    say \"lade $(basename \"$2\") ...\"\n    if curl -fL --retry 5 --retry-delay 5 --retry-connrefused -o \"$2.part\" \"$1\"; then\n        mv \"$2.part\" \"$2\"\n        say \"fertig: $2\"\n    else\n        rm -f \"$2.part\"\n        say \"FEHLER beim Laden von $1\"\n        return 1\n    fi\n}\n\n{\n\nsay \"warte auf den Ollama-Server ...\"\ni=0\nwhile [ $i -lt 90 ]; do\n    /bin/ollama list >/dev/null 2>&1 && break\n    i=$((i + 1))\n    sleep 2\ndone\nsay \"lade Modell qwen3:8b ...\"\n/bin/ollama pull qwen3:8b || exit 1\nsay \"Modell qwen3:8b ist einsatzbereit.\"\n\n} >>/workspace/bootstrap.log 2>&1 &\nexec /bin/ollama serve\n"
+      ],
+      "dockerStartCmd": []
+    }
+  },
+  {
+    "key": "8",
+    "name": "3D-Modellierung (ComfyUI + TripoSR)",
+    "provides": "ComfyUI + TripoSR-Node + TripoSR-Modell",
+    "hint": "",
+    "image": "runpod/comfyui:1.4.4-cuda12.8",
+    "primaryPort": 8188,
+    "extraPorts": [
+      8888,
+      8080
+    ],
+    "httpPorts": [
+      8188,
+      8888,
+      8080
+    ],
+    "diskGb": 70,
+    "gpuTypeIds": [
+      "NVIDIA GeForce RTX 4090",
+      "NVIDIA RTX 6000 Ada Generation",
+      "NVIDIA L40S",
+      "NVIDIA RTX A6000",
+      "NVIDIA GeForce RTX 3090",
+      "NVIDIA RTX A5000"
+    ],
+    "cudaVersions": [
+      "12.8",
+      "12.7",
+      "12.6",
+      "12.5",
+      "12.4",
+      "12.3",
+      "12.2",
+      "12.1"
+    ],
+    "jupyterEnv": "JUPYTER_PASSWORD",
+    "needsJupyterCred": true,
+    "needsFilebrowserCred": true,
+    "dockerOverride": {
+      "dockerEntrypoint": [
+        "/bin/sh",
+        "-c",
+        "set -u\nmkdir -p $(dirname /workspace/bootstrap.log)\n\nsay() { echo \"[bootstrap $(date -u +%H:%M:%S)] $*\" >&2; }\n\nwait_dir() {\n    deadline=$(( $(date +%s) + ${2:-1200} ))\n    while [ ! -d \"$1\" ]; do\n        if [ \"$(date +%s)\" -ge \"$deadline\" ]; then\n            say \"Timeout: $1 wurde nicht angelegt\"\n            return 1\n        fi\n        sleep 5\n    done\n    say \"gefunden: $1\"\n}\n\nfind_dir() {\n    deadline=$(( $(date +%s) + ${2:-1200} ))\n    while :; do\n        hit=$(find /workspace -maxdepth 6 -type d -name \"$1\" 2>/dev/null | head -1)\n        if [ -n \"$hit\" ]; then\n            say \"gefunden: $hit\"\n            echo \"$hit\"\n            return 0\n        fi\n        if [ \"$(date +%s)\" -ge \"$deadline\" ]; then\n            say \"Timeout: Verzeichnis '$1' nicht gefunden\"\n            return 1\n        fi\n        sleep 5\n    done\n}\n\nfetch() {\n    if [ -s \"$2\" ]; then say \"vorhanden: $2\"; return 0; fi\n    mkdir -p \"$(dirname \"$2\")\"\n    say \"lade $(basename \"$2\") ...\"\n    if curl -fL --retry 5 --retry-delay 5 --retry-connrefused -o \"$2.part\" \"$1\"; then\n        mv \"$2.part\" \"$2\"\n        say \"fertig: $2\"\n    else\n        rm -f \"$2.part\"\n        say \"FEHLER beim Laden von $1\"\n        return 1\n    fi\n}\n\n{\n\nwait_dir \"/workspace/runpod-slim/ComfyUI/custom_nodes\" || exit 1\nnode=\"/workspace/runpod-slim/ComfyUI/custom_nodes/ComfyUI-Flowty-TripoSR\"\nif [ ! -d \"$node\" ]; then\n    say \"installiere TripoSR-Node ...\"\n    git clone --depth 1 https://github.com/flowtyone/ComfyUI-Flowty-TripoSR \"$node\" || exit 1\nfi\nfetch \"https://huggingface.co/stabilityai/TripoSR/resolve/main/model.ckpt\" \"/workspace/runpod-slim/ComfyUI/models/checkpoints/TripoSR-model.ckpt\" || exit 1\nsay \"TripoSR bereit - im ComfyUI-Manager auf 'Restart' klicken, dann Node laden.\"\n\n} >>/workspace/bootstrap.log 2>&1 &\nexec /start.sh\n"
+      ],
+      "dockerStartCmd": []
+    }
+  },
+  {
+    "key": "9",
+    "name": "Video-Übersetzung & Lippensynchronisation (Werkzeugkasten)",
+    "provides": "JupyterLab + ffmpeg + faster-whisper + F5-TTS",
+    "hint": "Bewusst ohne Ein-Klick-UI: Lippensync-Modelle sind projektspezifisch.",
+    "image": "runpod/pytorch:1.1.0-cu1290-torch291-ubuntu2404",
+    "primaryPort": 8888,
+    "extraPorts": [],
+    "httpPorts": [
+      8888
+    ],
+    "diskGb": 80,
+    "gpuTypeIds": [
+      "NVIDIA GeForce RTX 5090",
+      "NVIDIA GeForce RTX 4090",
+      "NVIDIA RTX PRO 6000 Blackwell Workstation Edition",
+      "NVIDIA L40S",
+      "NVIDIA GeForce RTX 3090",
+      "NVIDIA RTX A5000"
+    ],
+    "cudaVersions": [],
+    "jupyterEnv": "JUPYTER_PASSWORD",
+    "needsJupyterCred": true,
+    "needsFilebrowserCred": false,
+    "dockerOverride": {
+      "dockerStartCmd": [
+        "/bin/sh",
+        "-c",
+        "set -u\nmkdir -p $(dirname /workspace/bootstrap.log)\n\nsay() { echo \"[bootstrap $(date -u +%H:%M:%S)] $*\" >&2; }\n\nwait_dir() {\n    deadline=$(( $(date +%s) + ${2:-1200} ))\n    while [ ! -d \"$1\" ]; do\n        if [ \"$(date +%s)\" -ge \"$deadline\" ]; then\n            say \"Timeout: $1 wurde nicht angelegt\"\n            return 1\n        fi\n        sleep 5\n    done\n    say \"gefunden: $1\"\n}\n\nfind_dir() {\n    deadline=$(( $(date +%s) + ${2:-1200} ))\n    while :; do\n        hit=$(find /workspace -maxdepth 6 -type d -name \"$1\" 2>/dev/null | head -1)\n        if [ -n \"$hit\" ]; then\n            say \"gefunden: $hit\"\n            echo \"$hit\"\n            return 0\n        fi\n        if [ \"$(date +%s)\" -ge \"$deadline\" ]; then\n            say \"Timeout: Verzeichnis '$1' nicht gefunden\"\n            return 1\n        fi\n        sleep 5\n    done\n}\n\nfetch() {\n    if [ -s \"$2\" ]; then say \"vorhanden: $2\"; return 0; fi\n    mkdir -p \"$(dirname \"$2\")\"\n    say \"lade $(basename \"$2\") ...\"\n    if curl -fL --retry 5 --retry-delay 5 --retry-connrefused -o \"$2.part\" \"$1\"; then\n        mv \"$2.part\" \"$2\"\n        say \"fertig: $2\"\n    else\n        rm -f \"$2.part\"\n        say \"FEHLER beim Laden von $1\"\n        return 1\n    fi\n}\n\n{\n\nsay \"installiere Werkzeuge (ffmpeg, faster-whisper, TTS-Basis) ...\"\napt-get update -qq && apt-get install -y -qq ffmpeg git-lfs\npip install --no-cache-dir faster-whisper f5-tts || exit 1\nsay \"Basis fertig: Transkription/Übersetzung via faster-whisper, Stimme via f5-tts.\"\nsay \"Lippensync-Modelle (LatentSync/Wav2Lip) bei Bedarf im JupyterLab klonen.\"\n\n} >>/workspace/bootstrap.log 2>&1 &\nexec /start.sh\n"
+      ]
+    }
+  }
+]
